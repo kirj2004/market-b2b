@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Услуги — {{ brand_name }}{% endblock %}
+
+{% block content %}
+<header class="page-head">
+  <div>
+    <h1 class="page-title">Услуги</h1>
+    <p class="page-sub">Каталог из 19 услуг. Цена и срок — ориентир, итог подтверждает менеджер.</p>
+  </div>
+  <a class="btn btn--primary" href="{{ url_for('client.new_order') }}">
+    {{ ui.icon('plus') }} Новая заявка
+  </a>
+</header>
+
+{% for level, items in grouped.items() %}
+  <section class="section">
+    <div class="section-head">
+      <h2 class="section-title">{{ level }}</h2>
+      <span class="section-note">{{ items|length }} услуг</span>
+    </div>
+    <div class="table-wrap">
+      <table class="table">
+        <caption class="sr-only">Услуги уровня «{{ level }}»</caption>
+        <thead>
+          <tr>
+            <th scope="col">№</th>
+            <th scope="col">Услуга</th>
+            <th scope="col">Цена</th>
+            <th scope="col">Срок</th>
+            <th scope="col">Мастер</th>
+            <th scope="col"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for service in items %}
+          <tr>
+            <td class="num">{{ service.n }}</td>
+            <td><span class="cell-name">{{ service.name }}</span></td>
+            <td class="num">{{ service.price_label }}</td>
+            <td class="num">{{ service.term }}</td>
+            <td>
+              {% if service.wizard_ready %}
+                <span class="badge badge--profit">готов</span>
+              {% else %}
+                <span class="badge badge--neutral">готовится</span>
+              {% endif %}
+            </td>
+            <td>
+              <a class="btn"
+                 href="{{ url_for('client.new_order', service=service.id) }}">Заказать</a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+{% endfor %}
+{% endblock %}

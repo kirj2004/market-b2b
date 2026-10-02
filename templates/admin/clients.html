@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}Клиенты (админ) — {{ brand_name }}{% endblock %}
+
+{% block content %}
+<header class="page-head">
+  <div>
+    <h1 class="page-title">Клиенты</h1>
+    <p class="page-sub">Найдено: {{ clients|length }}. Поиск по имени, email и компании.</p>
+  </div>
+  <a class="btn btn--ghost" href="{{ url_for('admin.dashboard') }}">
+    {{ ui.icon('arrow-left') }} Панель
+  </a>
+</header>
+
+<form method="get" action="{{ url_for('admin.clients') }}" class="filters">
+  <label class="sr-only" for="q">Поиск клиента</label>
+  <input class="input" id="q" name="q" type="search" value="{{ search }}"
+         placeholder="Имя, email, компания">
+  <button class="btn" type="submit">{{ ui.icon('search') }} Найти</button>
+  {% if search %}<a class="btn btn--ghost" href="{{ url_for('admin.clients') }}">Сбросить</a>{% endif %}
+</form>
+
+{% if clients %}
+<div class="table-wrap">
+  <table class="table">
+    <caption class="sr-only">Список клиентов</caption>
+    <thead>
+      <tr>
+        <th scope="col">Клиент</th>
+        <th scope="col">Компания</th>
+        <th scope="col">Роль</th>
+        <th scope="col">Заявок</th>
+        <th scope="col">Регистрация</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for client in clients %}
+      <tr>
+        <td>
+          <div class="cell-stack">
+            <a href="{{ url_for('admin.client_detail', user_id=client.id) }}">
+              {{ client.name }}
+            </a>
+            <span class="cell-sub">{{ client.email }}{% if client.phone %} · {{ client.phone }}{% endif %}</span>
+          </div>
+        </td>
+        <td>{{ client.company or '—' }}</td>
+        <td>
+          {% if client.role == 'admin' %}
+            <span class="badge badge--accent">админ</span>
+          {% else %}
+            <span class="badge badge--neutral">клиент</span>
+          {% endif %}
+        </td>
+        <td class="num">{{ client.orders_count }}</td>
+        <td class="num">{{ client.created_at|dt }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="empty">
+  {{ ui.icon('users', 32) }}
+  <p>{% if search %}Клиентов по запросу «{{ search }}» нет.{% else %}Клиентов пока нет.{% endif %}</p>
+</div>
+{% endif %}
+{% endblock %}

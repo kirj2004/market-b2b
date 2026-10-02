@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block title %}Админка — {{ brand_name }}{% endblock %}
+
+{% block content %}
+<header class="page-head">
+  <div>
+    <h1 class="page-title">Панель управления</h1>
+    <p class="page-sub">Заявок всего: {{ total }} · клиентов: {{ clients_count }}</p>
+  </div>
+  <div class="filters">
+    <a class="btn" href="{{ url_for('admin.orders') }}">{{ ui.icon('inbox') }} Все заявки</a>
+    <a class="btn" href="{{ url_for('admin.clients') }}">{{ ui.icon('users') }} Клиенты</a>
+    <a class="btn" href="{{ url_for('admin.api_key') }}">{{ ui.icon('key') }} API-ключи</a>
+  </div>
+</header>
+
+<div class="tiles">
+  <a class="tile" href="{{ url_for('admin.orders', status='new') }}">
+    <span class="tile__label">Новые</span>
+    <span class="tile__value">{{ new_count }}</span>
+  </a>
+  <a class="tile" href="{{ url_for('admin.orders', status='in_progress') }}">
+    <span class="tile__label">В работе</span>
+    <span class="tile__value">{{ active_count }}</span>
+  </a>
+  <a class="tile" href="{{ url_for('admin.orders', status='delivered') }}">
+    <span class="tile__label">Готово к сдаче</span>
+    <span class="tile__value">{{ done_count }}</span>
+  </a>
+  <a class="tile" href="{{ url_for('admin.orders', status='paid') }}">
+    <span class="tile__label">Оплачено</span>
+    <span class="tile__value">{{ paid_count }}</span>
+  </a>
+  <a class="tile" href="{{ url_for('admin.orders', status='paid') }}">
+    <span class="tile__label">Выручка по оплаченным, ₽</span>
+    <span class="tile__value">{{ '%.0f'|format(revenue) }}</span>
+  </a>
+</div>
+
+<section class="section">
+  <div class="section-head">
+    <h2 class="section-title">Последние заявки</h2>
+    <a class="section-note section-note--link" href="{{ url_for('admin.orders') }}">Все заявки</a>
+  </div>
+
+  {% if recent %}
+  <div class="table-wrap">
+    <table class="table">
+      <caption class="sr-only">Последние заявки</caption>
+      <thead>
+        <tr>
+          <th scope="col">№</th>
+          <th scope="col">Клиент</th>
+          <th scope="col">Услуга</th>
+          <th scope="col">Статус</th>
+          <th scope="col">Цена</th>
+          <th scope="col">Создана</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for order in recent %}
+        <tr>
+          <td class="num">#{{ order.id }}</td>
+          <td>
+            <div class="cell-stack">
+              <a href="{{ url_for('admin.client_detail', user_id=order.user_id) }}">
+                {{ order.user_name or order.user_email }}
+              </a>
+              <span class="cell-sub">{{ order.user_email or '' }}</span>
+            </div>
+          </td>
+          <td>
+            <div class="cell-stack">
+              <a href="{{ url_for('admin.order_detail', order_id=order.id) }}">{{ order.title }}</a>
+              <span class="cell-sub">
+                {{ order.service_id }}{% if order.urgent %} · срочно{% endif %}
+              </span>
+            </div>
+          </td>
+          <td>{{ ui.status_badge(order.status) }}</td>
+          <td class="num">{{ order.price or '—' }}</td>
+          <td class="num">{{ order.created_at|dt }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty">{{ ui.icon('inbox', 32) }}<p>Заявок пока нет.</p></div>
+  {% endif %}
+</section>
+
+<section class="section">
+  <div class="section-head">
+    <h2 class="section-title">Воронка по статусам</h2>
+  </div>
+  <div class="tiles">
+    {% for status, label in status_labels.items() %}
+    <a class="tile" href="{{ url_for('admin.orders', status=status) }}">
+      <span class="tile__label">{{ label }}</span>
+      <span class="tile__value">{{ counts.get(status, 0) }}</span>
+    </a>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

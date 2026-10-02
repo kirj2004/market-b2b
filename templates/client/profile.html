@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+{% block title %}Профиль — {{ brand_name }}{% endblock %}
+
+{% block content %}
+<header class="page-head">
+  <div>
+    <h1 class="page-title">Профиль</h1>
+    <p class="page-sub">{{ current_user.email }} · в кабинете с {{ current_user.created_at|dt }}</p>
+  </div>
+</header>
+
+<div class="layout-side">
+  <div class="stack">
+
+    <section class="card">
+      <div class="card-head">
+        <div>
+          <h2 class="card-title">Основные данные</h2>
+          <p class="card-sub">Имя и контакты видны менеджеру при работе по заявке.</p>
+        </div>
+      </div>
+      <form method="post" class="stack" novalidate>
+        {{ form.hidden_tag() }}
+        <div class="form-grid">
+          {{ ui.field(form.name) }}
+          {{ ui.field(form.phone, placeholder='+7 900 000-00-00') }}
+          {{ ui.field(form.company, placeholder='ООО «Ромашка»') }}
+        </div>
+        <div class="filters">
+          <button class="btn btn--primary" type="submit" name="save_profile" value="1">
+            Сохранить
+          </button>
+        </div>
+      </form>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <div>
+          <h2 class="card-title">API-ключ Wildberries</h2>
+          <p class="card-sub">Шифруется и хранится только здесь. В интерфейсе не показывается целиком.</p>
+        </div>
+        {% if wb_key_set %}<span class="badge badge--profit">Ключ сохранён</span>{% endif %}
+      </div>
+
+      {% if wb_key_set %}
+        <div class="token-row">
+          {{ ui.icon('key', 16) }}
+          <span>{{ wb_key_masked }}</span>
+        </div>
+      {% else %}
+        <div class="alert alert--warning">
+          {{ ui.icon('info', 16) }}
+          <span>Ключ не задан. Часть услуг требует выгрузки из личного кабинета —
+            без него работа идёт по брифу.</span>
+        </div>
+      {% endif %}
+
+      <form method="post" class="stack" novalidate>
+        {{ key_form.hidden_tag() }}
+        {{ ui.field(key_form.api_key_wb, placeholder='Вставьте новый ключ',
+                    hint='Старый ключ будет заменён.') }}
+        <div class="filters">
+          <button class="btn btn--primary" type="submit" name="save_key" value="1">
+            {{ ui.icon('shield') }} Сохранить в зашифрованном виде
+          </button>
+          {% if wb_key_set %}
+          <button class="btn btn--ghost" type="submit" name="clear" value="1"
+                  formnovalidate onclick="return confirm('Удалить API-ключ?')">
+            {{ ui.icon('trash') }} Удалить ключ
+          </button>
+          {% endif %}
+        </div>
+      </form>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <div>
+          <h2 class="card-title">Смена пароля</h2>
+          <p class="card-sub">Минимум 8 символов.</p>
+        </div>
+      </div>
+      <form method="post" class="stack" novalidate>
+        {{ pass_form.hidden_tag() }}
+        <div class="form-grid">
+          {{ ui.field(pass_form.current) }}
+          {{ ui.field(pass_form.new) }}
+          {{ ui.field(pass_form.new2) }}
+        </div>
+        <div class="filters">
+          <button class="btn btn--primary" type="submit" name="change_password" value="1">
+            Сменить пароль
+          </button>
+        </div>
+      </form>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <div>
+          <h2 class="card-title">API-токены</h2>
+          <p class="card-sub">
+            Токен нужен мастеру заказов, чтобы создавать заявку через API.
+            Сам токен показывается один раз — сразу после выпуска.
+          </p>
+        </div>
+      </div>
+
+      {% if tokens %}
+      <div class="table-wrap">
+        <table class="table table--compact">
+          <caption class="sr-only">Выпущенные API-токены</caption>
+          <thead>
+            <tr>
+              <th scope="col">Метка</th>
+              <th scope="col">Префикс</th>
+              <th scope="col">Создан</th>
+              <th scope="col">Действия</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for token in tokens %}
+            <tr>
+              <td>{{ token.label or '—' }}</td>
+              <td class="mono">{{ token.prefix }}…</td>
+              <td class="num">{{ token.created_at|dt }}</td>
+              <td>
+                {% if not token.revoked_at %}
+                <form method="post"
+                      onsubmit="return confirm('Отозвать токен? Мастер перестанет работать.')">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <input type="hidden" name="revoke_token" value="{{ token.id }}">
+                  <button class="btn btn--ghost" type="submit">Отозвать</button>
+                </form>
+                {% else %}
+                <span class="muted">отозван {{ token.revoked_at|dt }}</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="empty">{{ ui.icon('key', 28) }}<p>Активных токенов нет.</p></div>
+      {% endif %}
+
+      <form method="post" class="stack" novalidate>
+        {{ token_form.hidden_tag() }}
+        {{ ui.field(token_form.label, placeholder='мастер заказов',
+                    hint='Показывается в списке токенов, чтобы их различать.') }}
+        <div class="filters">
+          <button class="btn btn--primary" type="submit" name="issue_token" value="1">
+            {{ ui.icon('key') }} Выпустить токен
+          </button>
+        </div>
+      </form>
+    </section>
+  </div>
+
+  <aside class="layout-side__aside">
+    <section class="card">
+      <div class="card-head"><h2 class="card-title">Связаться с поддержкой</h2></div>
+      <form method="post" class="stack" novalidate>
+        {{ message_form.hidden_tag() }}
+        <div class="field field--wide">
+          <label class="field-label" for="support_message">Сообщение</label>
+          {{ message_form.message(class='textarea', id='support_message', rows=5) }}
+          {% for error in message_form.message.errors %}
+            <ul class="field-errors"><li>{{ error }}</li></ul>
+          {% endfor %}
+        </div>
+        <button class="btn btn--primary" type="submit" name="send_message" value="1">
+          {{ ui.icon('send') }} Отправить
+        </button>
+      </form>
+    </section>
+
+    <section class="card">
+      <div class="card-head"><h2 class="card-title">Сводка</h2></div>
+      <dl class="kv">
+        <dt class="kv__k">Заявок</dt>
+        <dd class="kv__v">{{ orders_count }}</dd>
+        <dt class="kv__k">Роль</dt>
+        <dd class="kv__v">
+          {{ 'Администратор' if current_user.role == 'admin' else 'Клиент' }}
+        </dd>
+        <dt class="kv__k">Компания</dt>
+        <dd class="kv__v">{{ current_user.company or '—' }}</dd>
+        <dt class="kv__k">Телефон</dt>
+        <dd class="kv__v">{{ current_user.phone or '—' }}</dd>
+      </dl>
+    </section>
+  </aside>
+</div>
+{% endblock %}

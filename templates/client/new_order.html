@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block title %}Новая заявка — {{ brand_name }}{% endblock %}
+
+{% block content %}
+<header class="page-head">
+  <div>
+    <h1 class="page-title">Новая заявка</h1>
+    <p class="page-sub">Выберите услугу, опишите задачу и приложите файлы. Данные уходят в работу сразу.</p>
+  </div>
+  <a class="btn btn--ghost" href="{{ url_for('client.dashboard') }}">
+    {{ ui.icon('arrow-left') }} К заявкам
+  </a>
+</header>
+
+<form method="post" enctype="multipart/form-data" class="stack" novalidate>
+  {{ form.hidden_tag() }}
+
+  <section class="card">
+    <div class="card-head">
+      <div>
+        <h2 class="card-title">Услуга</h2>
+        <p class="card-sub">Цена и срок — из каталога. Итоговую сумму подтверждает менеджер.</p>
+      </div>
+    </div>
+
+    <div class="stack">
+      {{ ui.field(form.service_id) }}
+      {% if selected %}
+      <div class="alert alert--info">
+        {{ ui.icon('info', 16) }}
+        <span>
+          <b>{{ selected.name }}</b> — {{ selected.price_label }}, срок {{ selected.term }}.
+          {% if selected.wizard_ready %}
+            По этой услуге есть мастер: можно собрать заявку через него.
+          {% else %}
+            Заявка попадёт менеджеру, мастер готовится.
+          {% endif %}
+        </span>
+      </div>
+      {% endif %}
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-head">
+      <div>
+        <h2 class="card-title">Бриф</h2>
+        <p class="card-sub">Чем конкретнее описание, тем меньше уточнений.</p>
+      </div>
+    </div>
+
+    <div class="form-grid">
+      {{ ui.field(form.title, placeholder='Например: юнит-экономика карточки',
+                  hint='Необязательно — подставим название услуги.') }}
+      {{ ui.field(form.shop, placeholder='Магазин или ссылка',
+                  hint='Необязательно. Помогает найти нужные данные.') }}
+      {{ ui.field(form.brief, rows=8,
+                  hint='Что нужно, по какому товару, какой формат ответа. От 10 символов.') }}
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-head">
+      <div>
+        <h2 class="card-title">Файлы</h2>
+        <p class="card-sub">Выгрузки, скриншоты, документы. Один файл — до 20 МБ.</p>
+      </div>
+    </div>
+    <div class="stack">
+      {{ ui.file_input(form.files,
+                       hint='csv, xlsx, json, pdf, png, jpg, zip, txt, docx') }}
+      {{ ui.field(form.urgent, hint='Срочная заявка берётся в работу вне очереди.') }}
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-head">
+      <div>
+        <h2 class="card-title">API-ключ Wildberries</h2>
+        <p class="card-sub">Нужен, если данные нужно тянуть из личного кабинета.</p>
+      </div>
+    </div>
+    <div class="stack">
+      {{ ui.field(form.api_key_wb, placeholder='Ключ из личного кабинета WB',
+                  hint='Шифруется при сохранении и не показывается в интерфейсе. Можно добавить позже в профиле.') }}
+      <div class="alert">
+        {{ ui.icon('shield', 16) }}
+        <span>
+          Где взять: Личный кабинет WB → Настройки → API-ключи. Ключ хранится
+          в зашифрованном виде; удалить его можно в <a class="link" href="{{ url_for('auth.profile') }}">профиле</a>.
+        </span>
+      </div>
+    </div>
+  </section>
+
+  <div class="filters">
+    <button class="btn btn--primary" type="submit">{{ ui.icon('send') }} Отправить заявку</button>
+    <a class="btn btn--ghost" href="{{ url_for('client.dashboard') }}">Отмена</a>
+  </div>
+</form>
+{% endblock %}

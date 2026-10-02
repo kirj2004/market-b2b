@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}{{ code }} — {{ title }}{% endblock %}
+
+{% block content %}
+<div class="narrow">
+  <div class="empty">
+    <p class="tile__value">{{ code }}</p>
+    <h1 class="page-title">{{ title }}</h1>
+    <p>{{ text }}</p>
+    <a class="btn btn--primary" href="{{ url_for('client.index') }}">
+      {{ ui.icon('arrow-left') }} На главную
+    </a>
+  </div>
+</div>
+{% endblock %}

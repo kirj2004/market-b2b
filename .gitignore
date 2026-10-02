@@ -1,0 +1,29 @@
+# Секреты и служебные данные
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Сгенерированный SECRET_KEY и база — содержимое data/ никогда не в git
+data/
+*.db
+*.sqlite
+*.sqlite3
+
+# Окружение
+.venv/
+venv/
+env/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+
+# Служебное
+.DS_Store
+*.log
+tmp_*

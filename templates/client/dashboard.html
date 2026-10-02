@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block title %}Заявки — {{ brand_name }}{% endblock %}
+
+{% block content %}
+<header class="page-head">
+  <div>
+    <h1 class="page-title">Заявки</h1>
+    <p class="page-sub">Всего заявок: {{ total }}. Активных: {{ counts.get('new', 0) + counts.get('brief', 0) + counts.get('in_progress', 0) }}.</p>
+  </div>
+  <a class="btn btn--primary" href="{{ url_for('client.new_order') }}">
+    {{ ui.icon('plus') }} Новая заявка
+  </a>
+</header>
+
+<div class="tiles">
+  <a class="tile" href="{{ url_for('client.dashboard') }}">
+    <span class="tile__label">Новые</span>
+    <span class="tile__value">{{ counts.get('new', 0) }}</span>
+  </a>
+  <a class="tile" href="{{ url_for('client.dashboard') }}">
+    <span class="tile__label">На уточнении</span>
+    <span class="tile__value">{{ counts.get('brief', 0) }}</span>
+  </a>
+  <a class="tile" href="{{ url_for('client.dashboard') }}">
+    <span class="tile__label">В работе</span>
+    <span class="tile__value">{{ counts.get('in_progress', 0) }}</span>
+  </a>
+  <a class="tile" href="{{ url_for('client.dashboard') }}">
+    <span class="tile__label">Готово</span>
+    <span class="tile__value">{{ counts.get('delivered', 0) }}</span>
+  </a>
+  <a class="tile" href="{{ url_for('auth.results') }}">
+    <span class="tile__label">Оплачено</span>
+    <span class="tile__value">{{ counts.get('paid', 0) }}</span>
+  </a>
+</div>
+
+{% if orders %}
+  <section class="section">
+    <div class="section-head">
+      <h2 class="section-title">Последние заявки</h2>
+    </div>
+    <div class="table-wrap">
+      <table class="table">
+        <caption class="sr-only">Список заявок клиента</caption>
+        <thead>
+          <tr>
+            <th scope="col">№</th>
+            <th scope="col">Услуга</th>
+            <th scope="col">Статус</th>
+            <th scope="col">Цена</th>
+            <th scope="col">Создана</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for order in orders %}
+          <tr>
+            <td class="num">#{{ order.id }}</td>
+            <td>
+              <div class="cell-stack">
+                <a href="{{ url_for('client.order_detail', order_id=order.id) }}">{{ order.title }}</a>
+                <span class="cell-sub">
+                  {{ order.service_id }}{% if order.urgent %} · срочно{% endif %}
+                </span>
+              </div>
+            </td>
+            <td>{{ ui.status_badge(order.status) }}</td>
+            <td class="num">{{ order.price or '—' }}</td>
+            <td class="num">{{ order.created_at|dt }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+{% else %}
+  <div class="empty">
+    {{ ui.icon('inbox', 32) }}
+    <p>Заявок пока нет.</p>
+    <a class="btn btn--primary" href="{{ url_for('client.new_order') }}">
+      {{ ui.icon('plus') }} Создать первую
+    </a>
+  </div>
+{% endif %}
+
+{% if active_orders %}
+  <section class="section">
+    <div class="section-head">
+      <h2 class="section-title">В работе сейчас</h2>
+      <span class="section-note">{{ active_orders|length }} шт.</span>
+    </div>
+    <div class="stack">
+      {% for order in active_orders %}
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <h3 class="card-title">№{{ order.id }} · {{ order.title }}</h3>
+            <p class="card-sub">Создана {{ order.created_at|dt }}</p>
+          </div>
+          {{ ui.status_badge(order.status) }}
+        </div>
+        <p class="muted">{{ status_labels[order.status] }} — следующий шаг появится здесь же,
+          сообщим в уведомлениях.</p>
+        <a class="link" href="{{ url_for('client.order_detail', order_id=order.id) }}">
+          Открыть заявку
+        </a>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+{% endif %}
+{% endblock %}

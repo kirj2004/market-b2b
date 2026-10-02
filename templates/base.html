@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="ru" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{{ brand_name }} — кабинет клиента{% endblock %}</title>
+  <meta name="description" content="{% block description %}Кабинет клиента: заявки, статусы, файлы, результаты.{% endblock %}">
+  <meta name="color-scheme" content="dark light">
+  <link rel="icon" href="{{ url_for('static', filename='img/favicon.svg') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/market.css') }}">
+</head>
+<body class="app">
+{% import "macros.html" as ui with context %}
+
+{% block chrome %}
+<header class="app-head">
+  <div class="app-head__inner">
+    <a class="brand" href="{{ url_for('client.index') }}">
+      <span class="brand__name">{{ brand_name }}</span>
+      <span class="brand__sub">{{ brand_sub }}</span>
+    </a>
+
+    {% if current_user %}
+    <nav class="app-nav" aria-label="Основная навигация">
+      <a class="app-nav__link" href="{{ url_for('client.dashboard') }}"
+         {% if request.endpoint == 'client.dashboard' %}aria-current="page"{% endif %}>
+        {{ ui.icon('inbox') }} Заявки
+      </a>
+      <a class="app-nav__link" href="{{ url_for('client.new_order') }}"
+         {% if request.endpoint == 'client.new_order' %}aria-current="page"{% endif %}>
+        {{ ui.icon('plus') }} Новая
+      </a>
+      <a class="app-nav__link" href="{{ url_for('client.services_list') }}"
+         {% if request.endpoint == 'client.services_list' %}aria-current="page"{% endif %}>
+        {{ ui.icon('package') }} Услуги
+      </a>
+      <a class="app-nav__link" href="{{ url_for('auth.results') }}"
+         {% if request.endpoint == 'auth.results' %}aria-current="page"{% endif %}>
+        {{ ui.icon('download') }} Результаты
+      </a>
+      <a class="app-nav__link" href="{{ url_for('auth.notifications') }}"
+         {% if request.endpoint == 'auth.notifications' %}aria-current="page"{% endif %}>
+        {{ ui.icon('bell') }} Уведомления
+        {% if unread_notifications %}
+          <span class="app-nav__badge">{{ unread_notifications }}</span>
+        {% endif %}
+      </a>
+      {% if current_user.role == 'admin' %}
+        <a class="app-nav__link" href="{{ url_for('admin.dashboard') }}"
+           {% if request.endpoint and request.endpoint.startswith('admin.') %}aria-current="page"{% endif %}>
+          {{ ui.icon('settings') }} Админка
+        </a>
+      {% endif %}
+      <a class="app-nav__link" href="{{ url_for('auth.profile') }}"
+         {% if request.endpoint == 'auth.profile' %}aria-current="page"{% endif %}>
+        {{ ui.icon('user') }} Профиль
+      </a>
+      <div class="app-user">
+        <span class="app-user__name">{{ current_user.name }}</span>
+        <span class="app-user__role">
+          {{ 'администратор' if current_user.role == 'admin' else 'клиент' }}
+        </span>
+      </div>
+      <form method="post" action="{{ url_for('auth.logout') }}">
+        {{ logout_csrf }}
+        <button class="btn btn--ghost" type="submit">{{ ui.icon('logout') }} Выйти</button>
+      </form>
+    </nav>
+    {% else %}
+    <nav class="app-nav" aria-label="Навигация">
+      <a class="app-nav__link" href="{{ url_for('auth.login') }}"
+         {% if request.endpoint == 'auth.login' %}aria-current="page"{% endif %}>Вход</a>
+      <a class="btn btn--primary" href="{{ url_for('auth.register') }}">Регистрация</a>
+    </nav>
+    {% endif %}
+  </div>
+</header>
+{% endblock %}
+
+<main class="app-main">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="flashes" role="status" aria-live="polite">
+        {% for category, message in messages %}
+          <div class="flash-item flash-item--{{ category }}">
+            {% if category == 'success' %}
+              {{ ui.icon('check', 14) }}
+            {% elif category == 'error' %}
+              {{ ui.icon('alert', 14) }}
+            {% else %}
+              {{ ui.icon('info', 14) }}
+            {% endif %}
+            <span>{{ message }}</span>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+
+  {% block content %}{% endblock %}
+</main>
+
+<footer class="app-foot">
+  <div class="app-foot__inner">
+    <span>{{ brand_name }} — кабинет клиента</span>
+    <span>Заказы принимаются по всей России</span>
+    <span>Файлы хранятся в закрытом контуре</span>
+  </div>
+</footer>
+
+<script src="{{ url_for('static', filename='js/market.js') }}" defer></script>
+</body>
+</html>

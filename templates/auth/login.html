@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Вход — {{ brand_name }}{% endblock %}
+
+{% block chrome %}{% endblock %}
+
+{% block content %}
+<div class="auth-wrap">
+  <div class="auth-card">
+    <div class="auth-card__head">
+      <h1 class="auth-card__title">Вход в кабинет</h1>
+      <p class="auth-card__sub">Заявки, статусы и файлы в одном месте.</p>
+    </div>
+
+    <form method="post" class="stack" novalidate>
+      {{ form.hidden_tag() }}
+      {{ ui.field(form.email, placeholder='you@example.ru') }}
+      {{ ui.field(form.password, placeholder='••••••••') }}
+
+      <label class="check" for="{{ form.remember.id }}">
+        {{ form.remember() }}
+        <span class="check__title">Не выходить</span>
+      </label>
+
+      <button class="btn btn--primary" type="submit">Войти</button>
+    </form>
+
+    <p class="auth-card__foot">
+      Нет кабинета? <a class="link" href="{{ url_for('auth.register') }}">Создать</a>
+    </p>
+  </div>
+</div>
+{% endblock %}

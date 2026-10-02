@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+{% block title %}{{ client.name }} (админ) — {{ brand_name }}{% endblock %}
+
+{% block content %}
+<header class="page-head">
+  <div>
+    <h1 class="page-title">{{ client.name }}</h1>
+    <p class="page-sub">
+      {{ client.email }}{% if client.phone %} · {{ client.phone }}{% endif %}
+      · с {{ client.created_at|dt }}
+    </p>
+  </div>
+  <a class="btn btn--ghost" href="{{ url_for('admin.clients') }}">
+    {{ ui.icon('arrow-left') }} К клиентам
+  </a>
+</header>
+
+<div class="layout-side">
+  <div class="stack">
+    <section class="card">
+      <div class="card-head">
+        <h2 class="card-title">Заявки ({{ orders|length }})</h2>
+      </div>
+      {% if orders %}
+      <div class="table-wrap">
+        <table class="table">
+          <caption class="sr-only">Заявки клиента</caption>
+          <thead>
+            <tr>
+              <th scope="col">№</th>
+              <th scope="col">Услуга</th>
+              <th scope="col">Статус</th>
+              <th scope="col">Цена</th>
+              <th scope="col">Создана</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for order in orders %}
+            <tr>
+              <td class="num">#{{ order.id }}</td>
+              <td>
+                <div class="cell-stack">
+                  <a href="{{ url_for('admin.order_detail', order_id=order.id) }}">{{ order.title }}</a>
+                  <span class="cell-sub">{{ order.service_id }}</span>
+                </div>
+              </td>
+              <td>{{ ui.status_badge(order.status) }}</td>
+              <td class="num">{{ order.price or '—' }}</td>
+              <td class="num">{{ order.created_at|dt }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="empty">{{ ui.icon('inbox', 28) }}<p>Заявок нет.</p></div>
+      {% endif %}
+    </section>
+  </div>
+
+  <aside class="layout-side__aside">
+    <section class="card">
+      <div class="card-head"><h2 class="card-title">Данные клиента</h2></div>
+      <dl class="kv">
+        <dt class="kv__k">Роль</dt>
+        <dd class="kv__v">{{ 'Администратор' if client.role == 'admin' else 'Клиент' }}</dd>
+        <dt class="kv__k">Компания</dt>
+        <dd class="kv__v">{{ client.company or '—' }}</dd>
+        <dt class="kv__k">Телефон</dt>
+        <dd class="kv__v">{{ client.phone or '—' }}</dd>
+      </dl>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <div>
+          <h2 class="card-title">API-ключ Wildberries</h2>
+          <p class="card-sub">Хранится зашифрованным. Полное значение не показывается.</p>
+        </div>
+      </div>
+      {% if wb_key_set %}
+        <div class="token-row">{{ ui.icon('key', 16) }}<span>{{ wb_key_masked }}</span></div>
+      {% else %}
+        <div class="alert alert--warning">
+          {{ ui.icon('info', 16) }}<span>Ключ не задан.</span>
+        </div>
+      {% endif %}
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <div>
+          <h2 class="card-title">API-токены клиента</h2>
+          <p class="card-sub">Действующие токены мастеров заказов.</p>
+        </div>
+      </div>
+      {% if tokens %}
+      <div class="table-wrap">
+        <table class="table table--compact">
+          <caption class="sr-only">Токены клиента</caption>
+          <thead>
+            <tr><th scope="col">Метка</th><th scope="col">Префикс</th><th scope="col">Статус</th></tr>
+          </thead>
+          <tbody>
+            {% for token in tokens %}
+            <tr>
+              <td>{{ token.label or '—' }}</td>
+              <td class="mono">{{ token.prefix }}…</td>
+              <td>
+                {% if token.revoked_at %}
+                  <span class="muted">отозван</span>
+                {% else %}
+                  <span class="badge badge--profit">активен</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="empty">{{ ui.icon('key', 24) }}<p>Токенов нет.</p></div>
+      {% endif %}
+    </section>
+  </aside>
+</div>
+{% endblock %}

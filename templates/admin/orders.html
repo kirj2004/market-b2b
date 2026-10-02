@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+{% block title %}Заявки (админ) — {{ brand_name }}{% endblock %}
+
+{% block content %}
+<header class="page-head">
+  <div>
+    <h1 class="page-title">Заявки</h1>
+    <p class="page-sub">Найдено: {{ orders|length }}. Фильтры применяются к таблице и к действиям.</p>
+  </div>
+  <div class="filters">
+    <a class="btn" href="{{ url_for('admin.dashboard') }}">{{ ui.icon('arrow-left') }} Панель</a>
+    <a class="btn btn--primary" href="{{ url_for('admin.api_key') }}">{{ ui.icon('key') }} API-ключи</a>
+  </div>
+</header>
+
+<form method="get" action="{{ url_for('admin.orders') }}" class="filters">
+  <label class="sr-only" for="f-status">Статус</label>
+  <select class="select" id="f-status" name="status">
+    <option value="">Все статусы</option>
+    {% for value, label in status_labels.items() %}
+    <option value="{{ value }}" {% if filters.status == value %}selected{% endif %}>{{ label }}</option>
+    {% endfor %}
+  </select>
+
+  <label class="sr-only" for="f-service">Услуга</label>
+  <select class="select" id="f-service" name="service">
+    <option value="">Все услуги</option>
+    {% for service in services %}
+    <option value="{{ service.id }}" {% if filters.service == service.id %}selected{% endif %}>
+      №{{ service.n }}. {{ service.name }}
+    </option>
+    {% endfor %}
+  </select>
+
+  <label class="sr-only" for="f-q">Поиск</label>
+  <input class="input" id="f-q" name="q" value="{{ filters.q }}"
+         placeholder="Клиент, email или № заявки" type="search">
+
+  <button class="btn" type="submit">{{ ui.icon('search') }} Применить</button>
+  {% if filters.status or filters.service or filters.q %}
+  <a class="btn btn--ghost" href="{{ url_for('admin.orders') }}">Сбросить</a>
+  {% endif %}
+</form>
+
+{% if orders %}
+  <section class="stack">
+    {% for order in orders %}
+    {% set allowed = status_transitions.get(order.status, []) %}
+    <article class="card">
+      <div class="card-head">
+        <div>
+          <h2 class="card-title">
+            <a class="link" href="{{ url_for('admin.order_detail', order_id=order.id) }}">
+              №{{ order.id }} · {{ order.title }}
+            </a>
+          </h2>
+          <p class="card-sub">
+            <a class="link" href="{{ url_for('admin.client_detail', user_id=order.user_id) }}">
+              {{ order.user_name or order.user_email }}
+            </a>
+            · {{ order.user_email }} · {{ order.service_id }}
+            · создана {{ order.created_at|dt }}
+            {% if order.urgent %} · <b>срочно</b>{% endif %}
+          </p>
+        </div>
+        {{ ui.status_badge(order.status) }}
+      </div>
+
+      {% if order.input_data %}
+      <dl class="kv">
+        <dt class="kv__k">Магазин</dt>
+        <dd class="kv__v">{{ order.input_data.get('shop') or '—' }}</dd>
+        <dt class="kv__k">Бриф</dt>
+        <dd class="kv__v">{{ order.input_data.get('brief')|nl2br if order.input_data.get('brief') else '—' }}</dd>
+      </dl>
+      {% endif %}
+
+      <form method="post" action="{{ url_for('admin.orders') }}" class="filters">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="dispatch" value="action">
+        <input type="hidden" name="order_id" value="{{ order.id }}">
+        <input type="hidden" name="back"
+               value="{{ url_for('admin.orders', status=filters.status, service=filters.service, q=filters.q) }}">
+
+        <label class="sr-only" for="st-{{ order.id }}">Новый статус</label>
+        <select class="select" id="st-{{ order.id }}" name="status">
+          <option value="{{ order.status }}" selected>{{ status_labels[order.status] }} — текущий</option>
+          {% for target in allowed %}
+          <option value="{{ target }}">{{ status_labels[target] }}</option>
+          {% endfor %}
+        </select>
+
+        <label class="sr-only" for="pr-{{ order.id }}">Цена</label>
+        <input class="input" id="pr-{{ order.id }}" name="price"
+               value="{{ order.price or '' }}" placeholder="Цена" maxlength="40">
+
+        <label class="check" for="ur-{{ order.id }}">
+          <input type="checkbox" id="ur-{{ order.id }}" name="urgent" value="1"
+                 {% if order.urgent %}checked{% endif %}>
+          <span class="sr-only">Срочная</span>
+        </label>
+
+        <label class="sr-only" for="cm-{{ order.id }}">Комментарий клиенту</label>
+        <input class="input" id="cm-{{ order.id }}" name="comment"
+               placeholder="Комментарий клиенту" maxlength="2000">
+
+        <button class="btn btn--primary" type="submit">{{ ui.icon('check') }} Применить</button>
+        <a class="btn btn--ghost" href="{{ url_for('admin.order_detail', order_id=order.id) }}">
+          Подробно
+        </a>
+      </form>
+
+      <form method="post" action="{{ url_for('admin.orders') }}"
+            enctype="multipart/form-data" class="filters">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="dispatch" value="upload">
+        <input type="hidden" name="order_id" value="{{ order.id }}">
+        <input type="hidden" name="back"
+               value="{{ url_for('admin.orders', status=filters.status, service=filters.service, q=filters.q) }}">
+        <label class="sr-only" for="cat-{{ order.id }}">Категория файла</label>
+        <select class="select" id="cat-{{ order.id }}" name="category">
+          {% for value, label in file_categories.items() %}
+          <option value="{{ value }}" {% if value == 'result' %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+        <label class="sr-only" for="fu-{{ order.id }}">Файл</label>
+        <input class="input" id="fu-{{ order.id }}" type="file" name="files" multiple>
+        <button class="btn" type="submit">{{ ui.icon('download') }} Прикрепить</button>
+      </form>
+
+      <form method="post" action="{{ url_for('admin.orders') }}" class="filters">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="dispatch" value="message">
+        <input type="hidden" name="order_id" value="{{ order.id }}">
+        <input type="hidden" name="back"
+               value="{{ url_for('admin.orders', status=filters.status, service=filters.service, q=filters.q) }}">
+        <label class="sr-only" for="msg-{{ order.id }}">Сообщение клиенту</label>
+        <input class="input" id="msg-{{ order.id }}" name="message"
+               placeholder="Сообщение клиенту" maxlength="2000" required>
+        <button class="btn btn--ghost" type="submit">{{ ui.icon('send') }} Написать</button>
+      </form>
+    </article>
+    {% endfor %}
+  </section>
+{% else %}
+  <div class="empty">
+    {{ ui.icon('inbox', 32) }}
+    <p>Заявок по этим фильтрам нет.</p>
+    <a class="btn btn--ghost" href="{{ url_for('admin.orders') }}">Сбросить фильтры</a>
+  </div>
+{% endif %}
+{% endblock %}

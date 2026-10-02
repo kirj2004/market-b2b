@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% block title %}API-ключи (админ) — {{ brand_name }}{% endblock %}
+
+{% block content %}
+<header class="page-head">
+  <div>
+    <h1 class="page-title">API-ключи</h1>
+    <p class="page-sub">
+      Токены доступа мастеров заказов. Сам токен хранится только в виде хэша —
+      в списке виден префикс, полного значения нет ни в интерфейсе, ни в базе.
+    </p>
+  </div>
+  <div class="filters">
+    <a class="btn btn--ghost" href="{{ url_for('admin.dashboard') }}">
+      {{ ui.icon('arrow-left') }} Панель
+    </a>
+    <a class="btn btn--ghost" href="{{ url_for('admin.clients') }}">{{ ui.icon('users') }} Клиенты</a>
+  </div>
+</header>
+
+<div class="layout-side">
+  <div>
+    {% if tokens %}
+    <div class="table-wrap">
+      <table class="table">
+        <caption class="sr-only">Все API-токены</caption>
+        <thead>
+          <tr>
+            <th scope="col">Пользователь</th>
+            <th scope="col">Метка</th>
+            <th scope="col">Префикс</th>
+            <th scope="col">Создан</th>
+            <th scope="col">Состояние</th>
+            <th scope="col">Действия</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for token in tokens %}
+          <tr>
+            <td>
+              <div class="cell-stack">
+                <a href="{{ url_for('admin.client_detail', user_id=token.user_id) }}">
+                  {{ token.user_email }}
+                </a>
+                <span class="cell-sub">user_id={{ token.user_id }}</span>
+              </div>
+            </td>
+            <td>{{ token.label or '—' }}</td>
+            <td class="mono">{{ token.prefix }}…</td>
+            <td class="num">{{ token.created_at|dt }}</td>
+            <td>
+              {% if token.revoked_at %}
+                <span class="muted">отозван {{ token.revoked_at|dt }}</span>
+              {% else %}
+                <span class="badge badge--profit">активен</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if not token.revoked_at %}
+              <form method="post" onsubmit="return confirm('Отозвать токен у {{ token.user_email }}? Мастер перестанет работать.')">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="action" value="revoke">
+                <input type="hidden" name="revoke" value="{{ token.id }}">
+                <button class="btn btn--ghost" type="submit">Отозвать</button>
+              </form>
+              {% else %}
+              <span class="muted">—</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty">{{ ui.icon('key', 32) }}<p>Токенов пока нет.</p></div>
+    {% endif %}
+  </div>
+
+  <aside class="layout-side__aside">
+    <section class="card">
+      <div class="card-head"><h2 class="card-title">Выпустить админский токен</h2></div>
+      <form method="post" class="stack">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="field">
+          <label class="field-label" for="label">Метка</label>
+          <input class="input" id="label" name="label" maxlength="60"
+                 value="мастер заказов">
+          <span class="field-hint">Показывается в списке, чтобы различать токены.</span>
+        </div>
+        <button class="btn btn--primary" type="submit" name="issue" value="1">
+          {{ ui.icon('key') }} Выпустить
+        </button>
+      </form>
+    </section>
+
+    <section class="card">
+      <div class="card-head"><h2 class="card-title">Как мастер работает</h2></div>
+      <div class="stack">
+        <p class="muted">Токен передаётся в заголовке:</p>
+        <pre class="code-block">X-API-Token: &lt;токен&gt;</pre>
+        <p class="muted">Или в виде Bearer:</p>
+        <pre class="code-block">Authorization: Bearer &lt;токен&gt;</pre>
+        <p class="muted">
+          <b>Создать заявку:</b> <span class="mono">POST /api/orders</span><br>
+          <b>Сменить статус:</b> <span class="mono">PATCH /api/orders/&lt;id&gt;</span><br>
+          <b>Прикрепить файл:</b> <span class="mono">POST /api/orders/&lt;id&gt;/files</span><br>
+          <b>Каталог услуг:</b> <span class="mono">GET /api/services</span>
+        </p>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-head"><h2 class="card-title">Про безопасность</h2></div>
+      <div class="alert">
+        {{ ui.icon('shield', 16) }}
+        <span>
+          Токен показывается клиенту один раз — сразу после выпуска, в уведомлениях.
+          В базе лежит только sha256. Отзыв действует немедленно.
+        </span>
+      </div>
+    </section>
+  </aside>
+</div>
+{% endblock %}

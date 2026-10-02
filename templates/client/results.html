@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Результаты — {{ brand_name }}{% endblock %}
+
+{% block content %}
+<header class="page-head">
+  <div>
+    <h1 class="page-title">Результаты</h1>
+    <p class="page-sub">Готовые отчёты и файлы по вашим заявкам. Скачивание доступно без ограничений.</p>
+  </div>
+</header>
+
+{% if files %}
+  <section class="section">
+    <div class="section-head">
+      <h2 class="section-title">Файлы по заявкам</h2>
+      <span class="section-note">{{ files|length }} шт.</span>
+    </div>
+    <div class="table-wrap">
+      <table class="table">
+        <caption class="sr-only">Файлы результатов</caption>
+        <thead>
+          <tr>
+            <th scope="col">Заявка</th>
+            <th scope="col">Файл</th>
+            <th scope="col">Размер</th>
+            <th scope="col">Добавлен</th>
+            <th scope="col">Скачать</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for file in files %}
+          <tr>
+            <td class="num">#{{ file.order_id }}</td>
+            <td>
+              <div class="cell-stack">
+                <span class="cell-name">{{ file.filename }}</span>
+                <span class="cell-sub">
+                  {{ file_categories.get(file.category, file.category) }}
+                </span>
+              </div>
+            </td>
+            <td class="num">{{ file.size|size }}</td>
+            <td class="num">{{ file.created_at|dt }}</td>
+            <td>
+              <a class="btn"
+                 href="{{ url_for('client.download_file', order_id=file.order_id, file_id=file.id) }}">
+                {{ ui.icon('download', 14) }} Скачать
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+{% else %}
+  <div class="empty">
+    {{ ui.icon('download', 32) }}
+    <p>Готовых файлов пока нет.</p>
+    <a class="btn btn--primary" href="{{ url_for('client.dashboard') }}">К заявкам</a>
+  </div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% block title %}Заявка №{{ order.id }} — {{ brand_name }}{% endblock %}
+
+{% block content %}
+<header class="page-head">
+  <div>
+    <h1 class="page-title">Заявка №{{ order.id }}</h1>
+    <p class="page-sub">{{ order.title }} · создана {{ order.created_at|dt }}</p>
+  </div>
+  <div class="filters">
+    {{ ui.status_badge(order.status, size='status-lg') }}
+    <a class="btn btn--ghost" href="{{ url_for('client.dashboard') }}">
+      {{ ui.icon('arrow-left') }} К заявкам
+    </a>
+  </div>
+</header>
+
+<div class="layout-side">
+  <div class="stack">
+    {% if order.urgent %}
+    <div class="alert alert--warning-strong">
+      {{ ui.icon('alert', 16) }}
+      <span>Заявка отмечена срочной — она вне очереди.</span>
+    </div>
+    {% endif %}
+
+    <section class="card">
+      <div class="card-head">
+        <h2 class="card-title">Ход работы</h2>
+      </div>
+      {{ ui.steps_bar(order.status) }}
+      <p class="muted">
+        Смена статуса приходит в уведомления. Готовый результат появится
+        в разделе <a class="link" href="{{ url_for('auth.results') }}">Результаты</a>.
+      </p>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <h2 class="card-title">Бриф</h2>
+      </div>
+      <dl class="kv">
+        <dt class="kv__k">Услуга</dt>
+        <dd class="kv__v">
+          {% if service %}№{{ service.n }}. {{ service.name }}{% else %}{{ order.service_id }}{% endif %}
+        </dd>
+
+        <dt class="kv__k">Магазин / площадка</dt>
+        <dd class="kv__v">{{ brief.get('shop') or '—' }}</dd>
+
+        <dt class="kv__k">Описание задачи</dt>
+        <dd class="kv__v">{{ brief.get('brief')|nl2br if brief.get('brief') else '—' }}</dd>
+
+        <dt class="kv__k">Цена по каталогу</dt>
+        <dd class="kv__v">{{ order.price or '—' }}</dd>
+
+        <dt class="kv__k">Источник</dt>
+        <dd class="kv__v">{{ order.source }}</dd>
+
+        <dt class="kv__k">Обновлена</dt>
+        <dd class="kv__v">{{ order.updated_at|dt }}</dd>
+      </dl>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <div>
+          <h2 class="card-title">Файлы</h2>
+          <p class="card-sub">Всего: {{ files|length }}. Лимит на заявку — 10 файлов.</p>
+        </div>
+      </div>
+
+      {% if files %}
+      <div class="files">
+        {% for file in files %}
+        <div class="files__row">
+          {{ ui.icon('file', 16) }}
+          <div>
+            <a class="files__name"
+               href="{{ url_for('client.download_file', order_id=order.id, file_id=file.id) }}">
+              {{ file.filename }}
+            </a>
+            <div class="files__meta">
+              {{ file_categories.get(file.category, file.category) }} · {{ file.size|size }}
+              · {{ file.created_at|dt }}
+            </div>
+          </div>
+          <div class="files__actions">
+            <a class="btn"
+               href="{{ url_for('client.download_file', order_id=order.id, file_id=file.id) }}">
+              {{ ui.icon('download', 14) }} Скачать
+            </a>
+            <form method="post"
+                  action="{{ url_for('client.delete_file', order_id=order.id, file_id=file.id) }}"
+                  onsubmit="return confirm('Удалить файл {{ file.filename }}?')">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button class="btn btn--ghost" type="submit" title="Удалить файл">
+                {{ ui.icon('trash', 14) }}
+                <span class="sr-only">Удалить {{ file.filename }}</span>
+              </button>
+            </form>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="empty">{{ ui.icon('file', 28) }}<p>К заявке пока нет файлов.</p></div>
+      {% endif %}
+    </section>
+  </div>
+
+  <aside class="layout-side__aside">
+    <section class="card">
+      <div class="card-head"><h2 class="card-title">Добавить файл</h2></div>
+      <form method="post" enctype="multipart/form-data" class="stack" novalidate>
+        {{ upload_form.hidden_tag() }}
+        {{ ui.field(upload_form.category) }}
+        {{ ui.file_input(upload_form.files, hint='csv, xlsx, json, pdf, png, jpg, zip, txt, docx') }}
+        <button class="btn btn--primary" type="submit">{{ ui.icon('send') }} Загрузить</button>
+      </form>
+    </section>
+
+    <section class="card">
+      <div class="card-head"><h2 class="card-title">Что дальше</h2></div>
+      <div class="stack">
+        {% if next_statuses %}
+          <p class="muted">Текущий статус: <b>{{ status_labels[order.status] }}</b>.</p>
+          <ul class="stack" style="gap: var(--space-1); margin: 0; padding-left: var(--space-4); color: var(--color-text-secondary); font-size: var(--text-sm);">
+            {% for status in next_statuses %}
+            <li>Дальше: {{ status_labels[status] }}</li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="muted">Заявка в финальном статусе. Файлы результата — в разделе «Результаты».</p>
+        {% endif %}
+      </div>
+    </section>
+  </aside>
+</div>
+{% endblock %}

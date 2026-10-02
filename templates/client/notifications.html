@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Уведомления — {{ brand_name }}{% endblock %}
+
+{% block content %}
+<header class="page-head">
+  <div>
+    <h1 class="page-title">Уведомления</h1>
+    <p class="page-sub">Смена статуса заявки, новые файлы и ответы поддержки.</p>
+  </div>
+  {% if unread_notifications %}
+  <form method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button class="btn" type="submit" name="mark_read" value="all">
+      {{ ui.icon('check') }} Отметить прочитанными
+    </button>
+  </form>
+  {% endif %}
+</header>
+
+{% if items %}
+  <section class="stack">
+    {% for item in items %}
+    <article class="card{% if not item.read_at %} card--unread{% endif %}">
+      <div class="card-head">
+        <div>
+          <h2 class="card-title">
+            {% if item.order_id %}
+              <a class="link" href="{{ url_for('client.order_detail', order_id=item.order_id) }}">
+                Заявка №{{ item.order_id }}
+              </a>
+            {% else %}
+              Общее
+            {% endif %}
+          </h2>
+          <p class="card-sub">
+            {{ notification_types.get(item.type, item.type) }} · {{ item.created_at|dt }}
+          </p>
+        </div>
+        {% if not item.read_at %}<span class="badge badge--accent">новое</span>{% endif %}
+      </div>
+      <p>{{ item.message }}</p>
+      {% if not item.read_at %}
+      <form method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="mark_read" value="{{ item.id }}">
+        <button class="btn btn--ghost" type="submit">Прочитано</button>
+      </form>
+      {% endif %}
+    </article>
+    {% endfor %}
+  </section>
+{% else %}
+  <div class="empty">
+    {{ ui.icon('bell', 32) }}
+    <p>Уведомлений пока нет.</p>
+  </div>
+{% endif %}
+{% endblock %}

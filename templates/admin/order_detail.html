@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+{% block title %}Заявка №{{ order.id }} (админ) — {{ brand_name }}{% endblock %}
+
+{% block content %}
+<header class="page-head">
+  <div>
+    <h1 class="page-title">Заявка №{{ order.id }}</h1>
+    <p class="page-sub">
+      <a class="link" href="{{ url_for('admin.client_detail', user_id=order.user_id) }}">
+        {{ order.user_name or order.user_email }}
+      </a>
+      · {{ order.user_email }}
+      · {{ order.service_id }}
+      · создана {{ order.created_at|dt }}
+    </p>
+  </div>
+  <div class="filters">
+    {{ ui.status_badge(order.status, size='status-lg') }}
+    <a class="btn btn--ghost" href="{{ url_for('admin.orders') }}">
+      {{ ui.icon('arrow-left') }} К списку
+    </a>
+  </div>
+</header>
+
+<div class="layout-side">
+  <div class="stack">
+    <section class="card">
+      <div class="card-head"><h2 class="card-title">Ход работы</h2></div>
+      {{ ui.steps_bar(order.status) }}
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <div>
+          <h2 class="card-title">Бриф</h2>
+          <p class="card-sub">Вход клиента. Отсюда берётся содержание работы.</p>
+        </div>
+      </div>
+      <dl class="kv">
+        <dt class="kv__k">Услуга</dt>
+        <dd class="kv__v">
+          {% if service %}№{{ service.n }}. {{ service.name }}{% else %}{{ order.service_id }}{% endif %}
+        </dd>
+        <dt class="kv__k">Тема</dt>
+        <dd class="kv__v">{{ order.title }}</dd>
+        <dt class="kv__k">Магазин</dt>
+        <dd class="kv__v">{{ brief.get('shop') or '—' }}</dd>
+        <dt class="kv__k">Описание</dt>
+        <dd class="kv__v">{{ brief.get('brief')|nl2br if brief.get('brief') else '—' }}</dd>
+        <dt class="kv__k">Источник</dt>
+        <dd class="kv__v">{{ order.source }}</dd>
+        <dt class="kv__k">Срочность</dt>
+        <dd class="kv__v">{{ 'срочная' if order.urgent else 'обычная' }}</dd>
+      </dl>
+      <details>
+        <summary class="link">Весь бриф в JSON</summary>
+        <pre class="code-block">{{ brief|json_pretty }}</pre>
+      </details>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <h2 class="card-title">Файлы заявки ({{ files|length }})</h2>
+      </div>
+      {% if files %}
+      <div class="files">
+        {% for file in files %}
+        <div class="files__row">
+          {{ ui.icon('file', 16) }}
+          <div>
+            <a class="files__name"
+               href="{{ url_for('admin.download_file', order_id=order.id, file_id=file.id) }}">
+              {{ file.filename }}
+            </a>
+            <div class="files__meta">
+              {{ file_categories.get(file.category, file.category) }} · {{ file.size|size }}
+              · {{ file.created_at|dt }}
+            </div>
+          </div>
+          <div class="files__actions">
+            <a class="btn"
+               href="{{ url_for('admin.download_file', order_id=order.id, file_id=file.id) }}">
+              {{ ui.icon('download', 14) }} Скачать
+            </a>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="empty">{{ ui.icon('file', 28) }}<p>Файлов нет.</p></div>
+      {% endif %}
+    </section>
+  </div>
+
+  <aside class="layout-side__aside">
+    <section class="card">
+      <div class="card-head"><h2 class="card-title">Сменить статус</h2></div>
+      <form method="post" class="stack">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="dispatch" value="action">
+        <input type="hidden" name="order_id" value="{{ order.id }}">
+
+        <div class="field">
+          <label class="field-label" for="status">Новый статус</label>
+          <select class="select" id="status" name="status">
+            <option value="{{ order.status }}" selected>{{ status_labels[order.status] }} — текущий</option>
+            {% for target in next_statuses %}
+            <option value="{{ target }}">{{ status_labels[target] }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="field">
+          <label class="field-label" for="price">Цена</label>
+          <input class="input" id="price" name="price" value="{{ order.price or '' }}"
+                 maxlength="40" placeholder="Например: 9 900">
+        </div>
+
+        <label class="check" for="urgent">
+          <input type="checkbox" id="urgent" name="urgent" value="1"
+                 {% if order.urgent %}checked{% endif %}>
+          <span class="check__title">Срочная</span>
+        </label>
+
+        <div class="field">
+          <label class="field-label" for="comment">Комментарий клиенту</label>
+          <textarea class="textarea" id="comment" name="comment" rows="3"
+                    maxlength="2000"
+                    placeholder="Уйдёт в уведомление вместе со сменой статуса"></textarea>
+        </div>
+
+        <button class="btn btn--primary" type="submit">{{ ui.icon('check') }} Применить</button>
+      </form>
+    </section>
+
+    <section class="card">
+      <div class="card-head"><h2 class="card-title">Прикрепить результат</h2></div>
+      <form method="post" enctype="multipart/form-data" class="stack">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="dispatch" value="upload">
+        <input type="hidden" name="order_id" value="{{ order.id }}">
+
+        <div class="field">
+          <label class="field-label" for="category">Категория</label>
+          <select class="select" id="category" name="category">
+            {% for value, label in file_categories.items() %}
+            <option value="{{ value }}" {% if value == 'result' %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="field">
+          <span class="field-label">Файл</span>
+          <div class="filebox">
+            <input type="file" name="files" multiple required
+                   aria-label="Файл результата">
+          </div>
+        </div>
+
+        <button class="btn btn--primary" type="submit">{{ ui.icon('download') }} Прикрепить</button>
+      </form>
+    </section>
+
+    <section class="card">
+      <div class="card-head"><h2 class="card-title">Написать клиенту</h2></div>
+      <form method="post" class="stack">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="dispatch" value="message">
+        <input type="hidden" name="order_id" value="{{ order.id }}">
+        <div class="field">
+          <label class="field-label" for="message">Сообщение</label>
+          <textarea class="textarea" id="message" name="message" rows="4"
+                    maxlength="2000" required
+                    placeholder="Вопрос клиенту или ответ"></textarea>
+        </div>
+        <button class="btn" type="submit">{{ ui.icon('send') }} Отправить</button>
+      </form>
+    </section>
+  </aside>
+</div>
+{% endblock %}
