@@ -73,7 +73,9 @@
   <div class="field field--wide{% if form_field.errors %} field--error{% endif %}">
     <span class="field-label">{{ form_field.label.text }}</span>
     <div class="filebox">
-      {{ form_field(id=form_field.id, name=form_field.name) }}
+      {#- `name` передавать нельзя: wtforms подставляет его сам из поля, -
+          #  а явный name приходит вторым значением и роняет html_params(). -#}
+      {{ form_field(id=form_field.id) }}
       {% if hint %}<span class="field-hint">{{ hint }}</span>{% endif %}
     </div>
     {% if form_field.errors %}

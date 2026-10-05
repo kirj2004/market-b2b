@@ -75,7 +75,11 @@ def format_size(size: int) -> str:
 
 def flash_errors(form: Any) -> None:
     """Показать ошибки формы одним списком, а не по одной."""
-    messages = [str(e) for e in form.form_errors()] if hasattr(form, "form_errors") else []
+    # В wtforms 3.x `form_errors` — свойство, а не метод. Раньше здесь стояло
+    # `form.form_errors()`, из-за чего любая форма с ошибками падала в 500
+    # вместо показа ошибок. Поддерживаем оба варианта.
+    raw = getattr(form, "form_errors", None)
+    messages = [str(e) for e in (raw() if callable(raw) else raw or [])]
     for field_errors in form.errors.values():
         messages.extend(str(e) for e in field_errors)
     for message in dict.fromkeys(messages):
